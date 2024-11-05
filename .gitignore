@@ -77,3 +77,17 @@ stamp-*
 *.stamp
 *.stamp-*
 .Tpo
+
+# Haiku IDE
+.genio
+
+# CMake artifacts
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+
+# generated output
+md2html/md2html
+src/md4c-html.pc
+src/md4c.pc
+
