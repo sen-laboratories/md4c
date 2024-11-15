@@ -1492,7 +1492,13 @@ md_build_attribute(MD_CTX* ctx, const CHAR* raw_text, SZ raw_size,
     }
 
     if(is_trivial) {
-        build->text = (CHAR*) (raw_size ? raw_text : NULL);
+        if (raw_size > 0) {
+            build->text = (CHAR*) realloc(build->text, raw_size + 1);
+            build->text = (CHAR*) (raw_text);
+            build->text[raw_size] = '\0';
+        } else {
+            build->text = NULL;
+        }
         build->substr_types = build->trivial_types;
         build->substr_offsets = build->trivial_offsets;
         build->substr_count = 1;
@@ -1502,7 +1508,7 @@ md_build_attribute(MD_CTX* ctx, const CHAR* raw_text, SZ raw_size,
         build->trivial_offsets[1] = raw_size;
         off = raw_size;
     } else {
-        build->text = (CHAR*) malloc(raw_size * sizeof(CHAR));
+        build->text = (CHAR*) malloc(raw_size * sizeof(CHAR) + 1);  // null terminated
         if(build->text == NULL) {
             MD_LOG("malloc() failed.");
             goto abort;
