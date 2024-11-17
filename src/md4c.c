@@ -1549,13 +1549,14 @@ md_build_attribute(MD_CTX* ctx, const CHAR* raw_text, SZ raw_size,
             build->text[off++] = raw_text[raw_off++];
         }
         build->substr_offsets[build->substr_count] = off;
+        build->text[off] = '\0';
     }
-    // null terminate attribute string
-    build->text[off] = '\0';
+
     attr->text = build->text;
-    attr->size = off + 1;
+    attr->size = off;
     attr->substr_offsets = build->substr_offsets;
     attr->substr_types = build->substr_types;
+
     return 0;
 
 abort:
