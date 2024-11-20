@@ -146,7 +146,7 @@
 
 #define SZ_MAX      (sizeof(SZ) == 8 ? UINT64_MAX : UINT32_MAX)
 // obsolete? causes clash with previous definiton on Haiku:
-//#define OFF_MAX     (sizeof(OFF) == 8 ? UINT64_MAX : UINT32_MAX)
+#define OFF_MAX     (sizeof(OFF) == 8 ? UINT64_MAX : UINT32_MAX)
 
 typedef struct MD_MARK_tag MD_MARK;
 typedef struct MD_BLOCK_tag MD_BLOCK;
@@ -268,7 +268,7 @@ struct MD_CTX_tag {
 };
 
 enum MD_LINETYPE_tag {
-    MD_LINE_BLANK,
+    MD_LINE_BLANK = 0,
     MD_LINE_HR,
     MD_LINE_ATXHEADER,
     MD_LINE_SETEXTHEADER,
@@ -356,6 +356,7 @@ struct MD_VERBATIMLINE_tag {
     #define md_strchr strchr
 #endif
 
+static char log[1024];
 
 /* Case insensitive check of string equality. */
 static inline int
@@ -389,7 +390,7 @@ md_text_with_null_replacement(MD_CTX* ctx, MD_TEXTTYPE type, const CHAR* str, SZ
     int ret = 0;
 
     while(1) {
-        while(off < size  &&  str[off] != _T('\0'))
+        while(off < size && str[off] != _T('\0'))
             off++;
 
         if(off > 0) {
@@ -4856,8 +4857,11 @@ md_process_leaf_block(MD_CTX* ctx, const MD_BLOCK* block)
             break;
     }
 
-    if(!is_in_tight_list  ||  block->type != MD_BLOCK_P)
-        MD_ENTER_BLOCK(block->type, ctx->marks->beg, (void*) &det);
+    const MD_VERBATIMLINE* line = ((const MD_VERBATIMLINE*)(block + 1));
+
+    if(!is_in_tight_list || block->type != MD_BLOCK_P) {
+        MD_ENTER_BLOCK(block->type, line->beg, (void*) &det);
+    }
 
     /* Process the block contents according to its type. */
     switch(block->type) {
@@ -4866,28 +4870,24 @@ md_process_leaf_block(MD_CTX* ctx, const MD_BLOCK* block)
             break;
 
         case MD_BLOCK_CODE:
-            MD_CHECK(md_process_code_block_contents(ctx, (block->data != 0),
-                            (const MD_VERBATIMLINE*)(block + 1), block->n_lines));
+            MD_CHECK(md_process_code_block_contents(ctx, (block->data != 0), line, block->n_lines));
             break;
 
         case MD_BLOCK_HTML:
-            MD_CHECK(md_process_verbatim_block_contents(ctx, MD_TEXT_HTML,
-                            (const MD_VERBATIMLINE*)(block + 1), block->n_lines));
+            MD_CHECK(md_process_verbatim_block_contents(ctx, MD_TEXT_HTML, line, block->n_lines));
             break;
 
         case MD_BLOCK_TABLE:
-            MD_CHECK(md_process_table_block_contents(ctx, block->data,
-                            (const MD_LINE*)(block + 1), block->n_lines));
+            MD_CHECK(md_process_table_block_contents(ctx, block->data, (const MD_LINE*)(block + 1), block->n_lines));
             break;
 
         default:
-            MD_CHECK(md_process_normal_block_contents(ctx,
-                            (const MD_LINE*)(block + 1), block->n_lines));
+            MD_CHECK(md_process_normal_block_contents(ctx, (const MD_LINE*)(block + 1), block->n_lines));
             break;
     }
 
-    if(!is_in_tight_list  ||  block->type != MD_BLOCK_P)
-        MD_LEAVE_BLOCK(block->type, ctx->marks->end, (void*) &det);
+    if(!is_in_tight_list || block->type != MD_BLOCK_P)
+        MD_LEAVE_BLOCK(block->type, line->end, (void*) &det);
 
 abort:
     if(clean_fence_code_detail) {
@@ -5141,7 +5141,6 @@ md_end_current_block(MD_CTX* ctx)
 
     if(ctx->current_block->type == MD_BLOCK_H  &&  (ctx->current_block->flags & MD_BLOCK_SETEXT_HEADER)) {
         MD_SIZE n_lines = ctx->current_block->n_lines;
-
         if(n_lines > 1) {
             /* Get rid of the underline. */
             ctx->current_block->n_lines--;
