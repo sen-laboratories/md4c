@@ -1495,7 +1495,7 @@ md_build_attribute(MD_CTX* ctx, const CHAR* raw_text, SZ raw_size,
         if (raw_size > 0) {
             build->text = (CHAR*) realloc(build->text, raw_size + 1);
             build->text = (CHAR*) (raw_text);
-            build->text[raw_size] = '\0';
+            build->text[raw_size++] = '\0';
         } else {
             build->text = NULL;
         }
@@ -1549,7 +1549,7 @@ md_build_attribute(MD_CTX* ctx, const CHAR* raw_text, SZ raw_size,
             build->text[off++] = raw_text[raw_off++];
         }
         build->substr_offsets[build->substr_count] = off;
-        build->text[off] = '\0';
+        build->text[off++] = '\0';
     }
 
     attr->text = build->text;
