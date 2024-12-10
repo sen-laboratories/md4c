@@ -384,7 +384,7 @@ md_ascii_eq(const CHAR* s1, const CHAR* s2, SZ n)
 }
 
 static int
-md_text_with_null_replacement(MD_CTX* ctx, MD_TEXTTYPE type, const CHAR* str, SZ size)
+md_text_with_null_replacement(MD_CTX* ctx, MD_TEXTTYPE type, const CHAR* str, OFF offset, SZ size)
 {
     OFF off = 0;
     int ret = 0;
@@ -394,7 +394,7 @@ md_text_with_null_replacement(MD_CTX* ctx, MD_TEXTTYPE type, const CHAR* str, SZ
             off++;
 
         if(off > 0) {
-            ret = ctx->parser.text(type, str, off, size, ctx->userdata);
+            ret = ctx->parser.text(type, str, offset, size, ctx->userdata);
             if(ret != 0)
                 return ret;
 
@@ -406,7 +406,7 @@ md_text_with_null_replacement(MD_CTX* ctx, MD_TEXTTYPE type, const CHAR* str, SZ
         if(off >= size)
             return 0;
 
-        ret = ctx->parser.text(MD_TEXT_NULLCHAR, _T(""), off, 1, ctx->userdata);
+        ret = ctx->parser.text(MD_TEXT_NULLCHAR, _T(""), offset, 1, ctx->userdata);
         if(ret != 0)
             return ret;
         off++;
@@ -480,7 +480,7 @@ md_text_with_null_replacement(MD_CTX* ctx, MD_TEXTTYPE type, const CHAR* str, SZ
 #define MD_TEXT(type, str, off, size)                                       \
     do {                                                                    \
         if(size > 0) {                                                      \
-            ret = ctx->parser.text((type), (str), (off), (size), ctx->userdata);   \
+            ret = ctx->parser.text((type), (str), (off), (size), ctx->userdata); \
             if(ret != 0) {                                                  \
                 MD_LOG("Aborted from text() callback.");                    \
                 goto abort;                                                 \
@@ -488,10 +488,10 @@ md_text_with_null_replacement(MD_CTX* ctx, MD_TEXTTYPE type, const CHAR* str, SZ
         }                                                                   \
     } while(0)
 
-#define MD_TEXT_INSECURE(type, str, size)                                   \
+#define MD_TEXT_INSECURE(type, str, off, size)                              \
     do {                                                                    \
         if(size > 0) {                                                      \
-            ret = md_text_with_null_replacement(ctx, type, str, size);      \
+            ret = md_text_with_null_replacement(ctx, type, str, off, size); \
             if(ret != 0) {                                                  \
                 MD_LOG("Aborted from text() callback.");                    \
                 goto abort;                                                 \
@@ -4731,7 +4731,7 @@ md_process_verbatim_block_contents(MD_CTX* ctx, MD_TEXTTYPE text_type, const MD_
             MD_TEXT(text_type, indent_chunk_str, line->beg, indent);
 
         /* Output the code line itself. */
-        MD_TEXT_INSECURE(text_type, STR(line->beg), line->end - line->beg);
+        MD_TEXT_INSECURE(text_type, STR(line->beg), line->beg, line->end - line->beg);
 
         /* Enforce end-of-line. */
         MD_TEXT(text_type, _T("\n"), line->beg, 1);
